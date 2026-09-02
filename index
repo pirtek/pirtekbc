@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pirtek Ondernemers Challenge</title>
+<style>
+  :root{
+    --blue: #0046AD;
+    --yellow: #FFCB05;
+    --yellow-deep: #D9AC00;
+    --red: #E10A17;
+    --red-deep: #A80812;
+    --ink: #1A1A1A;
+    --card: #F4F5F7;
+    --card-border: #E1E3E7;
+    --steel: #6B6E76;
+    --paper: #FFFFFF;
+    --pressure: var(--blue);
+    --good: #2E8B57;
+    --font-head: "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none;}
+  html,body{height:100%; margin:0;}
+  body{
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    height:100vh;
+    width:100vw;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #app{
+    position:relative;
+    width:100%;
+    height:100%;
+    max-width:900px;
+    display:flex;
+    flex-direction:column;
+  }
+  .screen{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    padding: clamp(20px, 4vw, 48px);
+    opacity:0;
+    transition: opacity .25s ease;
+  }
+  .screen.active{display:flex; opacity:1;}
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding-bottom: clamp(12px,2vh,24px);
+    flex-shrink:0;
+  }
+  .brand{
+    font-family: var(--font-head);
+    font-weight:900;
+    font-size: clamp(20px, 3vw, 26px);
+    letter-spacing:-0.02em;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand{color: var(--red);}
+  .brand .dot{
+    width:10px;height:10px;border-radius:50%;background:var(--blue);
+    box-shadow: 0 0 0 4px rgba(0,70,173,0.16);
+  }
+  .pill{
+    font-size:13px;
+    font-weight:700;
+    color: var(--ink);
+    border:1px solid var(--yellow-deep);
+    padding:6px 12px;
+    border-radius:999px;
+    background: var(--yellow);
+  }
+
+  h1{
+    font-family: var(--font-head);
+    font-weight:900;
+    font-size: clamp(30px, 6vw, 52px);
+    line-height:1.02;
+    letter-spacing:-0.02em;
+    margin: 0 0 14px 0;
+    color: var(--blue);
+  }
+  h1 span{color:var(--red);}
+  p.lead{
+    font-size: clamp(15px, 2vw, 18px);
+    color: var(--steel);
+    max-width: 46ch;
+    line-height:1.5;
+    margin:0 0 auto 0;
+  }
+
+  .center-stack{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap: clamp(16px,3vh,28px);
+  }
+
+  .btn{
+    appearance:none;
+    border:none;
+    font-family: var(--font-head);
+    font-weight:800;
+    font-size: clamp(17px, 2.4vw, 20px);
+    letter-spacing:-0.01em;
+    color: var(--ink);
+    background: var(--yellow);
+    padding: 18px 28px;
+    border-radius: 14px;
+    cursor:pointer;
+    text-align:center;
+    transition: transform .08s ease, background .15s ease;
+    box-shadow: 0 8px 0 var(--yellow-deep);
+  }
+  .btn:active{transform: translateY(6px); box-shadow: 0 2px 0 var(--yellow-deep);}
+  .btn.secondary{
+    background: transparent;
+    color: var(--blue);
+    box-shadow:none;
+    border:2px solid var(--blue);
+  }
+  .btn.secondary:active{transform: translateY(2px);}
+  .btn.block{width:100%;}
+  .btn:disabled{opacity:.4; box-shadow:none;}
+
+  .rules{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .rule-card{
+    flex:1;
+    min-width:150px;
+    background: var(--card);
+    border-radius:14px;
+    padding:16px;
+    border:1px solid var(--card-border);
+  }
+  .rule-card .num{
+    font-family: var(--font-head);
+    font-weight:900;
+    font-size:22px;
+    color: var(--red);
+    display:block;
+    margin-bottom:6px;
+  }
+  .rule-card p{margin:0; font-size:14px; color:var(--steel); line-height:1.4;}
+
+  /* GAME SCREEN */
+  .hud{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom: 14px;
+    flex-shrink:0;
+  }
+  .hud .stat{
+    background: var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding: 10px 16px;
+    text-align:center;
+    min-width:80px;
+  }
+  .hud .stat b{
+    display:block;
+    font-family: var(--font-head);
+    font-size:24px;
+    font-weight:900;
+    color: var(--blue);
+  }
+  .hud .stat span{font-size:11px; color:var(--steel);}
+  .timebar-wrap{
+    height:10px; background:var(--card); border-radius:999px; overflow:hidden;
+    margin-bottom:16px; flex-shrink:0; border:1px solid var(--card-border);
+  }
+  .timebar{height:100%; background: var(--pressure); width:100%; transition: width .1s linear;}
+
+  .board{
+    flex:1;
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: clamp(8px, 2vw, 16px);
+  }
+  .cell{
+    border-radius:16px;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    transition: transform .06s ease;
+  }
+  .cell:active{transform: scale(.96);}
+  .fitting{
+    width:46%;
+    height:46%;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, #cfd2d8);
+    border: 3px solid #b7bbc2;
+  }
+  .cell.leak{
+    border-color: var(--red);
+    background: #FDE8E8;
+    animation: pulse 0.6s ease-in-out infinite alternate;
+  }
+  .cell.leak .fitting{
+    background: radial-gradient(circle at 35% 30%, var(--red), var(--red-deep));
+    border-color: var(--red);
+  }
+  .drop{
+    position:absolute;
+    width:14px;height:18px;
+    background: var(--red);
+    border-radius: 0 50% 50% 50%;
+    transform: rotate(45deg);
+    top: 18%;
+    opacity:0;
+  }
+  .cell.leak .drop{ animation: drip 0.9s ease-in infinite; }
+  @keyframes pulse{ from{ box-shadow: 0 0 0 0 rgba(225,10,23,.35);} to{ box-shadow: 0 0 0 14px rgba(225,10,23,0);} }
+  @keyframes drip{ 0%{opacity:0; top:14%;} 20%{opacity:1;} 100%{opacity:0; top:60%;} }
+  .cell.hit .fitting{ background: radial-gradient(circle at 35% 30%, var(--good), #1f5f3d); border-color: var(--good);}
+  .cell.miss{ border-color:#E7A3A3; }
+
+  /* QUIZ SCREEN */
+  .q-progress{
+    display:flex;
+    gap:6px;
+    margin-bottom:18px;
+    flex-shrink:0;
+  }
+  .q-progress .seg{flex:1; height:6px; border-radius:999px; background:var(--card-border);}
+  .q-progress .seg.done{background:var(--blue);}
+  .q-timebar-wrap{height:8px; background:var(--card); border:1px solid var(--card-border); border-radius:999px; overflow:hidden; margin-bottom:20px; flex-shrink:0;}
+  .q-timebar{height:100%; background:var(--pressure); width:100%; transition: width .1s linear;}
+  .q-prompt{
+    font-family: var(--font-head);
+    font-weight:800;
+    font-size: clamp(20px, 3.4vw, 28px);
+    line-height:1.2;
+    margin: 0 0 20px 0;
+    color: var(--blue);
+  }
+  .q-options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    flex:1;
+  }
+  .q-opt{
+    background: var(--card);
+    border:2px solid var(--card-border);
+    border-radius:14px;
+    padding:16px 18px;
+    font-size: clamp(14px,1.8vw,16px);
+    color: var(--ink);
+    text-align:left;
+    cursor:pointer;
+  }
+  .q-opt:active{transform: scale(.98);}
+  .q-opt.correct{ background:#E6F4EC; border-color:var(--good); }
+  .q-opt.wrong{ background:#FDE8E8; border-color:var(--red); }
+  .q-feedback{
+    margin-top:14px;
+    font-size:14px;
+    color: var(--steel);
+    line-height:1.5;
+    min-height: 20px;
+  }
+
+  /* LEAD FORM */
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .field label{font-size:13px; color:var(--steel);}
+  .field input{
+    background: var(--paper);
+    border:2px solid var(--card-border);
+    border-radius:12px;
+    padding:14px 16px;
+    color: var(--ink);
+    font-size:16px;
+    font-family: var(--font-body);
+  }
+  .field input:focus{outline:none; border-color:var(--blue);}
+  .consent{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    font-size:12px;
+    color:var(--steel);
+    margin: 4px 0 20px 0;
+  }
+  .consent input{margin-top:3px;}
+
+  /* RESULT */
+  .result-hero{
+    text-align:center;
+    padding: 20px 0;
+  }
+  .result-hero .big-num{
+    font-family: var(--font-head);
+    font-weight:900;
+    font-size: clamp(56px, 12vw, 96px);
+    color: var(--red);
+    line-height:1;
+  }
+  .result-hero .cap{font-size:14px; color:var(--steel); letter-spacing:0.02em;}
+  .verdict{
+    background: var(--card);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:20px;
+    text-align:center;
+    margin: 10px 0 24px 0;
+  }
+  .verdict h2{margin:0 0 8px 0; font-family:var(--font-head); font-size:22px; color:var(--blue);}
+  .verdict p{margin:0; color:var(--steel); font-size:14px; line-height:1.5;}
+  .bottom-actions{display:flex; gap:12px; margin-top:auto;}
+  .bottom-actions .btn{flex:1;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START -->
+  <section class="screen active" id="screen-start">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span>PIRTEK</div>
+      <div class="pill">Beurs Challenge</div>
+    </div>
+    <div class="center-stack">
+      <div>
+        <h1>Spot het lek.<br>Denk als een <span>ondernemer</span>.</h1>
+        <p class="lead">30 seconden lekkages spotten op het paneel, gevolgd door 6 vragen die testen of jij het in je hebt om je eigen Pirtek-center te runnen. Alles op dit scherm — geen gereedschap nodig.</p>
+      </div>
+      <div class="rules">
+        <div class="rule-card"><span class="num">1</span><p>Tik de lekkende koppeling zo snel mogelijk aan.</p></div>
+        <div class="rule-card"><span class="num">2</span><p>Beantwoord 6 vragen tegen de klok.</p></div>
+        <div class="rule-card"><span class="num">3</span><p>Ontdek je ondernemersscore en praat met ons team.</p></div>
+      </div>
+      <button class="btn block" onclick="startGame()">Start de challenge</button>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen" id="screen-game">
+    <div class="hud">
+      <div class="stat"><b id="game-score">0</b><span>GEVONDEN</span></div>
+      <div class="brand" style="font-size:16px;">LEK OPSPOREN</div>
+      <div class="stat"><b id="game-time">30</b><span>SECONDEN</span></div>
+    </div>
+    <div class="timebar-wrap"><div class="timebar" id="game-timebar"></div></div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- LEAD FORM -->
+  <section class="screen" id="screen-lead">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span>PIRTEK</div>
+      <div class="pill">Bijna klaar</div>
+    </div>
+    <div class="center-stack" style="justify-content:flex-start;">
+      <h1 style="font-size:clamp(24px,4vw,34px);">Vul je gegevens in<br>voor je score</h1>
+      <p class="lead" style="margin-bottom:20px;">We sturen je resultaat door en nemen contact op als je interesse hebt in een Pirtek-center in jouw regio.</p>
+      <div class="field"><label>Naam</label><input id="lead-name" type="text" placeholder="Voor- en achternaam"></div>
+      <div class="field"><label>E-mailadres</label><input id="lead-email" type="email" placeholder="naam@bedrijf.be"></div>
+      <div class="field"><label>Mobiel nummer</label><input id="lead-phone" type="tel" placeholder="06 12 34 56 78" inputmode="tel"></div>
+      <div class="field"><label>Regio interesse (optioneel)</label><input id="lead-region" type="text" placeholder="bv. Antwerpen, Vlaams-Brabant..."></div>
+      <label class="consent"><input type="checkbox" id="lead-consent" checked> Ik ga akkoord dat Pirtek mij mag contacteren over franchisemogelijkheden.</label>
+      <button class="btn block" onclick="submitLead()">Bekijk mijn score</button>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="screen-quiz">
+    <div class="topbar">
+      <div class="brand" style="font-size:16px;">ONDERNEMERSTEST</div>
+      <div class="pill" id="quiz-counter">Vraag 1/6</div>
+    </div>
+    <div class="q-progress" id="q-progress"></div>
+    <div class="q-timebar-wrap"><div class="q-timebar" id="q-timebar"></div></div>
+    <p class="q-prompt" id="q-prompt"></p>
+    <div class="q-options" id="q-options"></div>
+    <p class="q-feedback" id="q-feedback"></p>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen" id="screen-result">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span>PIRTEK</div>
+      <div class="pill">Resultaat</div>
+    </div>
+    <div class="center-stack">
+      <div class="result-hero">
+        <div class="big-num" id="result-num">0/6</div>
+        <div class="cap">ONDERNEMERSSCORE</div>
+      </div>
+      <div class="verdict">
+        <h2 id="verdict-title"></h2>
+        <p id="verdict-text"></p>
+      </div>
+      <div class="bottom-actions">
+        <button class="btn secondary" onclick="restart()">Opnieuw spelen</button>
+        <button class="btn" onclick="finish()">Praat met ons team</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ---------- HUBSPOT CONFIG ----------
+// Vul hier je eigen Portal ID en Form GUID in (te vinden in HubSpot: Marketing > Forms > je formulier > Share/Embed).
+const HUBSPOT_PORTAL_ID = "JOUW_PORTAL_ID";      // bv. "24736958"
+const HUBSPOT_FORM_ID   = "JOUW_FORM_GUID";       // bv. "a1b2c3d4-e5f6-7890-abcd-1234567890ab"
+
+async function submitToHubSpot(data){
+  // Als de placeholders nog niet zijn ingevuld, sla submission over (voorkomt fouten tijdens testen).
+  if (HUBSPOT_PORTAL_ID.startsWith("JOUW_") || HUBSPOT_FORM_ID.startsWith("JOUW_")) {
+    console.warn("HubSpot niet geconfigureerd — vul HUBSPOT_PORTAL_ID en HUBSPOT_FORM_ID in.");
+    return;
+  }
+  const endpoint = `https://api.hsforms.com/submissions/v3/integration/submit/${HUBSPOT_PORTAL_ID}/${HUBSPOT_FORM_ID}`;
+  const payload = {
+    fields: [
+      { name: "firstname", value: data.name },
+      { name: "email", value: data.email },
+      { name: "phone", value: data.phone },
+      { name: "regio_interesse", value: data.region }, // custom property, evt. eerst aanmaken in HubSpot
+    ],
+    context: {
+      pageUri: window.location.href,
+      pageName: "Pirtek Ondernemers Challenge - Beursstand"
+    }
+  };
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HubSpot submit failed: ${res.status}`);
+    console.log("Lead verstuurd naar HubSpot.");
+  } catch (err) {
+    // Geen internet op de beursvloer? Bewaar lokaal zodat je later alsnog kunt synchroniseren.
+    console.error(err);
+    queueOfflineLead(data);
+  }
+}
+
+function queueOfflineLead(data){
+  try {
+    const key = "pirtek_offline_leads";
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    existing.push({ ...data, capturedAt: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch (e) {
+    console.error("Kon lead niet lokaal opslaan", e);
+  }
+}
+
+// ---------- STATE ----------
+let gameScore = 0;
+let gameTimeLeft = 30;
+let gameTimer = null;
+let leakTimer = null;
+let activeLeakCell = null;
+let leakTimeoutId = null;
+
+const QUESTIONS = [
+  {
+    prompt: "Een klant belt om 23:00 met een kapotte slang, de machine ligt stil. Wat doe jij?",
+    options: [
+      "Ik regel dat er binnen het uur iemand rijdt",
+      "Ik bel morgenochtend terug",
+      "Ik stuur een mail met openingstijden",
+      "Voicemail aan, ik ben aan het eten"
+    ],
+    correct: 0,
+    feedback: "Pirtek staat voor 1-uur mobiele service, 24/7. Als ondernemer sta jij daar garant voor."
+  },
+  {
+    prompt: "Vaste baan met zekerheid, of eigen bedrijf met risico én potentieel?",
+    options: [
+      "Zekerheid, ik hou niet van risico",
+      "Eigen bedrijf, ik bouw liever iets van mezelf op",
+      "Allebei een beetje, freelance dan maar",
+      "Geen van beide"
+    ],
+    correct: 1,
+    feedback: "Een franchisenemer bouwt zijn eigen bedrijf, met de steun van een bewezen formule."
+  },
+  {
+    prompt: "Hoe voel jij je bij het aansturen van een team monteurs?",
+    options: [
+      "Ik werk liever alleen",
+      "Prima, ik krijg energie van mensen aansturen",
+      "Alleen als iemand anders de planning doet",
+      "Nog nooit gedaan, geen idee"
+    ],
+    correct: 1,
+    feedback: "Als franchisenemer bouw je een eigen team op — leiderschap is een groot deel van het vak."
+  },
+  {
+    prompt: "Je regio krijgt een grote nieuwe bouw- of havenklant. Eerste gedachte?",
+    options: [
+      "Kans! Hoe word ik hun preferred partner?",
+      "Spannend, laat maar aan een ander over",
+      "Ik wacht tot ze zelf bellen",
+      "Geen idee wat ik daarmee moet"
+    ],
+    correct: 0,
+    feedback: "Pirtek-centers bedienen bouw, transport en maritiem — kansen pakken zit in de formule."
+  },
+  {
+    prompt: "Hoe belangrijk is het om een bewezen concept te volgen, in plaats van alles zelf te bedenken?",
+    options: [
+      "Heel belangrijk, ik wil niet elk wiel opnieuw uitvinden",
+      "Onbelangrijk, ik doe het liever op mijn manier",
+      "Maakt me niet uit",
+      "Ik vertrouw op mijn onderbuikgevoel"
+    ],
+    correct: 0,
+    feedback: "Elk Pirtek-center werkt volgens hetzelfde beproefde concept, met intensieve begeleiding."
+  },
+  {
+    prompt: "Je hebt geen technische achtergrond. Wat nu?",
+    options: [
+      "Fijn, ik leer het vak en focus zelf op ondernemen",
+      "Onmogelijk zonder techniek",
+      "Ik zou het niet durven zonder diploma",
+      "Ik wacht tot ik alles al kan"
+    ],
+    correct: 0,
+    feedback: "Een technische achtergrond is geen vereiste bij Pirtek — ondernemerschap weegt minstens zo zwaar."
+  }
+];
+
+let quizIndex = 0;
+let quizCorrect = 0;
+let qTimer = null;
+let qTimeLeft = 8;
+let answered = false;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ---------- GAME ----------
+function startGame(){
+  gameScore = 0;
+  gameTimeLeft = 30;
+  document.getElementById('game-score').textContent = '0';
+  document.getElementById('game-time').textContent = '30';
+  document.getElementById('game-timebar').style.width = '100%';
+  buildBoard();
+  showScreen('screen-game');
+
+  gameTimer = setInterval(() => {
+    gameTimeLeft -= 0.1;
+    if (gameTimeLeft <= 0){
+      gameTimeLeft = 0;
+      endGame();
+    }
+    document.getElementById('game-time').textContent = Math.ceil(gameTimeLeft);
+    document.getElementById('game-timebar').style.width = (gameTimeLeft/30*100) + '%';
+  }, 100);
+
+  spawnLeak();
+}
+
+function buildBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let i = 0; i < 9; i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.idx = i;
+    cell.innerHTML = '<div class="fitting"></div><div class="drop"></div>';
+    cell.addEventListener('click', () => hitCell(i));
+    board.appendChild(cell);
+  }
+}
+
+function spawnLeak(){
+  if (gameTimeLeft <= 0) return;
+  const cells = document.querySelectorAll('.cell');
+  cells.forEach(c => c.classList.remove('leak','hit','miss'));
+
+  const idx = Math.floor(Math.random() * 9);
+  activeLeakCell = idx;
+  cells[idx].classList.add('leak');
+
+  const liveFor = Math.max(650, 1400 - gameScore * 15);
+  leakTimeoutId = setTimeout(() => {
+    if (activeLeakCell === idx){
+      cells[idx].classList.remove('leak');
+      cells[idx].classList.add('miss');
+      activeLeakCell = null;
+      setTimeout(() => { if(gameTimeLeft>0) spawnLeak(); }, 150);
+    }
+  }, liveFor);
+}
+
+function hitCell(idx){
+  if (gameTimeLeft <= 0) return;
+  const cells = document.querySelectorAll('.cell');
+  if (idx === activeLeakCell){
+    clearTimeout(leakTimeoutId);
+    gameScore++;
+    document.getElementById('game-score').textContent = gameScore;
+    cells[idx].classList.remove('leak');
+    cells[idx].classList.add('hit');
+    activeLeakCell = null;
+    setTimeout(() => { if(gameTimeLeft>0) spawnLeak(); }, 150);
+  }
+}
+
+function endGame(){
+  clearInterval(gameTimer);
+  clearTimeout(leakTimeoutId);
+  showScreen('screen-lead');
+}
+
+// ---------- LEAD ----------
+function submitLead(){
+  const leadData = {
+    name: document.getElementById('lead-name').value.trim(),
+    email: document.getElementById('lead-email').value.trim(),
+    phone: document.getElementById('lead-phone').value.trim(),
+    region: document.getElementById('lead-region').value.trim(),
+    consent: document.getElementById('lead-consent').checked
+  };
+
+  if (!leadData.name || !leadData.email || !leadData.phone){
+    alert("Vul je naam, e-mailadres en mobiele nummer in.");
+    return;
+  }
+
+  submitToHubSpot(leadData); // verstuurt op de achtergrond, blokkeert de flow niet
+
+  showScreen('screen-quiz');
+  quizIndex = 0;
+  quizCorrect = 0;
+  renderProgress();
+  renderQuestion();
+}
+
+// ---------- QUIZ ----------
+function renderProgress(){
+  const wrap = document.getElementById('q-progress');
+  wrap.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'seg' + (i < quizIndex ? ' done' : '');
+    wrap.appendChild(seg);
+  });
+}
+
+function renderQuestion(){
+  answered = false;
+  const q = QUESTIONS[quizIndex];
+  document.getElementById('quiz-counter').textContent = `Vraag ${quizIndex+1}/${QUESTIONS.length}`;
+  document.getElementById('q-prompt').textContent = q.prompt;
+  document.getElementById('q-feedback').textContent = '';
+
+  const optWrap = document.getElementById('q-options');
+  optWrap.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q-opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => answerQuestion(i));
+    optWrap.appendChild(btn);
+  });
+
+  qTimeLeft = 8;
+  document.getElementById('q-timebar').style.width = '100%';
+  clearInterval(qTimer);
+  qTimer = setInterval(() => {
+    qTimeLeft -= 0.1;
+    if (qTimeLeft <= 0){
+      qTimeLeft = 0;
+      if (!answered) answerQuestion(-1);
+    }
+    document.getElementById('q-timebar').style.width = (qTimeLeft/8*100) + '%';
+  }, 100);
+}
+
+function answerQuestion(choiceIdx){
+  if (answered) return;
+  answered = true;
+  clearInterval(qTimer);
+  const q = QUESTIONS[quizIndex];
+  const opts = document.querySelectorAll('.q-opt');
+  opts.forEach((el, i) => {
+    el.style.pointerEvents = 'none';
+    if (i === q.correct) el.classList.add('correct');
+    else if (i === choiceIdx) el.classList.add('wrong');
+  });
+  if (choiceIdx === q.correct) quizCorrect++;
+  document.getElementById('q-feedback').textContent = q.feedback;
+
+  setTimeout(() => {
+    quizIndex++;
+    if (quizIndex < QUESTIONS.length){
+      renderProgress();
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  }, 1800);
+}
+
+// ---------- RESULT ----------
+function showResult(){
+  document.getElementById('result-num').textContent = `${quizCorrect}/${QUESTIONS.length}`;
+  const title = document.getElementById('verdict-title');
+  const text = document.getElementById('verdict-text');
+
+  if (quizCorrect >= 5){
+    title.textContent = "Jij hebt de X-factor van een Pirtek-ondernemer";
+    text.textContent = "Snelheid, leiderschap en lef — precies wat een Pirtek-center nodig heeft. Ons team wil je vandaag nog spreken.";
+  } else if (quizCorrect >= 3){
+    title.textContent = "Je hebt duidelijk potentie";
+    text.textContent = "Een paar dingen om samen te bespreken, maar de basis zit goed. Kom langs voor een kennismakingsgesprek.";
+  } else {
+    title.textContent = "Bedankt voor het spelen!";
+    text.textContent = "Ondernemen bij Pirtek is misschien niet meteen jouw ding, maar loop gerust langs voor meer informatie.";
+  }
+  showScreen('screen-result');
+}
+
+function restart(){
+  showScreen('screen-start');
+}
+
+function finish(){
+  document.getElementById('verdict-text').textContent += " Loop naar de stand — ons team staat klaar.";
+}
+</script>
+</body>
+</html>
